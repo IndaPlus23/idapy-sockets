@@ -2,37 +2,46 @@ import threading
 import socket
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(("127.0.0.1", 55555)) #Connect the client ot the server
+client.connect(("127.0.0.1", 55555))
 
 nickname = input("Choose a nickname: ")
-def recieve():
+room = input("Which chatroom do you want to join? (Default is named 'All') ")
 
+# Receive acknowledgment for NICK
+client.recv(1024)
+
+# Send nickname
+client.send(nickname.encode('ascii'))
+
+# Receive acknowledgment for ROOM
+client.recv(1024)
+
+# Send room
+client.send(room.encode('ascii'))
+
+def receive():
     while True:
-
         try:
-
             message = client.recv(1024).decode('ascii')
-            if message == "NICK":
-                client.send(nickname.encode('ascii'))
-            else:
-                print(message)
-
+            print(message)
         except:
-
             print("An error has occurred!")
             client.close()
             break
 
 def write():
-
     while True:
-
-        message = '{}: {}'.format(nickname, input(''))
+        writing = input('')
+        if writing.lower() == 'exit':
+            leave()
+        message = '{}: {}'.format(nickname, writing)
         client.send(message.encode('ascii'))
 
-recieve_thread = threading.Thread(target=recieve)
-recieve_thread.start()
+def leave():
+    client.close()
+
+receive_thread = threading.Thread(target=receive)
+receive_thread.start()
 
 write_thread = threading.Thread(target=write)
 write_thread.start()
-
