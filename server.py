@@ -1,11 +1,12 @@
 import threading
 import socket
 
-host = "127.0.0.1"
-port = 55555
+
+HOST = "127.0.0.1"
+PORT = 55555
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((host, port))
+server.bind((HOST, PORT))
 server.listen()
 
 clients = []
@@ -29,7 +30,7 @@ def handle(client, room):
             clients.remove(client)
             client.close()
             nickname = nicknames[index]
-            broadcast(f'{nickname} left the chat!'.encode('ascii'), chatrooms[room])
+            broadcast(f'{nickname} left the chat!'.encode('utf-8'), chatrooms[room])
             nicknames.remove(nickname)
             break
 
@@ -38,28 +39,33 @@ def receive():
         client, address = server.accept()
         print(f"Connected with {str(address)}")
 
-        # Send acknowledgment for NICK
-        client.send('ACK_NICK'.encode('ascii'))
+        try:
 
-        nickname = client.recv(1024).decode('ascii')
-        nicknames.append(nickname)
-        clients.append(client)
+            # Send acknowledgment for NICK
+            client.send('ACK_NICK'.encode('utf-8'))
 
-        # Send acknowledgment for ROOM
-        client.send('ACK_ROOM'.encode('ascii'))
+            nickname = client.recv(1024).decode('utf-8')
+            nicknames.append(nickname)
+            clients.append(client)
 
-        room = client.recv(1024).decode('ascii')
-        if room not in chatrooms:
-            chatrooms[room] = []
+            # Send acknowledgment for ROOM
+            client.send('ACK_ROOM'.encode('utf-8'))
 
-        chatrooms[room].append(client)
-        print(f'These are the chatrooms: {chatrooms}!')
+            room = client.recv(1024).decode('utf-8')
+            if room not in chatrooms:
+                chatrooms[room] = []
 
-        print(f'Nickname of new client is {nickname}!')
-        broadcast(f'{nickname} joined the chat!'.encode('ascii'), room)
-        client.send('Connected to the server!'.encode('ascii'))
+            chatrooms[room].append(client)
+            print(f'These are the chatrooms: {chatrooms}!')
 
-        thread = threading.Thread(target=handle, args=(client, room))
-        thread.start()
+            print(f'Nickname of new client is {nickname}!')
+            broadcast(f'{nickname} joined the chat!'.encode('utf-8'), room)
+            client.send('Connected to the server!'.encode('utf-8'))
 
+            thread = threading.Thread(target=handle, args=(client, room))
+            thread.start()
+
+        except (ConnectionResetError, ConnectionAbortedError):
+            # Handle the exception (e.g., print a message or clean up)
+            print("Client connection error")
 receive()
