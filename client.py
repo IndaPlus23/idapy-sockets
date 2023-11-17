@@ -1,3 +1,4 @@
+import random
 import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import messagebox
@@ -35,6 +36,7 @@ class ChatClientGUI:
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.nickname = nickname
         self.room = room
+        self.nickname_colors = {} #Directory that will store every nickname and give it a corresponding color.
 
         self.client_socket.connect(("127.0.0.1", 55555)) #Connect to the correct server
 
@@ -81,10 +83,33 @@ class ChatClientGUI:
             self.disconnect_from_server()
 
     def display_message(self, message):
-        self.chat_display.configure(state='normal')
-        self.chat_display.insert('end', message + '\n')
-        self.chat_display.yview('end')
-        self.chat_display.configure(state='disabled')
+
+        parts = message.split(': ', 1)
+
+        # Check if the message format is as expected
+        if len(parts) == 2:
+            nickname, content = parts[0], parts[1]
+
+            # Determine the color for the nickname (or generate a new color)
+            color = self.nickname_colors.get(nickname) #If the nickname already has a color we write in that color
+            if color is None:
+
+                color = '#{:02x}{:02x}{:02x}'.format( #Get only the darker colors
+                    random.randint(0,190),
+                    random.randint(0,190),
+                    random.randint(0, 190)
+                ) #Get a random color
+
+                self.nickname_colors[nickname] = color #Put the color and name in the directory.
+
+            tag_name = f"{nickname}_tag"
+            # Configure the tag for the nickname with the determined color
+            self.chat_display.tag_configure(tag_name, foreground=color)
+
+            self.chat_display.configure(state='normal')
+            self.chat_display.insert('end', message + '\n', tag_name) #Write in color
+            self.chat_display.yview('end')
+            self.chat_display.configure(state='disabled')
 
     def leave(self):
         self.client_socket.close()
